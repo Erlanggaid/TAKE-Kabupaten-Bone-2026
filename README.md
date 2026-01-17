@@ -1,1 +1,0 @@
-# TAKE-Kabupaten-Bone-2026
