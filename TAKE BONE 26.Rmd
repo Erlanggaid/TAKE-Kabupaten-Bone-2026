@@ -1,0 +1,79 @@
+---
+title: "TAKE Kabupaten Bone 2026"
+author: "Erlangga"
+date: "2026-01-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(sf)
+library(leaflet)
+library(RColorBrewer)
+library(leafem)
+
+# Read shapefile
+bone <- st_read("C:/Users/Erlangga/OneDrive - CIFOR-ICRAF/Documents/p/Indikator_TAKE_Bone_2026_ed.shp")  # uses attached files
+
+# Convert numeric
+nums <- c("Peringkat_", "Status_Bad", "Kemampuan_", "Kontribusi", "Ketepatan_", 
+          "Rasio_alok", "Status_sub", "Rasio_al_1", "Status_s_1", "Rasio_al_2", 
+          "Status_s_2", "Status_Des", "Ranking")
+for(n in nums) if(n %in% colnames(bone)) bone[[n]] <- as.numeric(as.character(bone[[n]]))
+
+# REMOVE NA: filter only valid ranking
+bone_clean <- bone[!is.na(bone$Ranking) & bone$Ranking > 0 & !is.na(bone$Desa), ]
+
+# Ranking colors (low = best = dark green)
+pal <- colorNumeric("RdYlGn", bone_clean$Ranking, reverse = TRUE)
+
+# HTML TABLE POPUP with FULL NAMES
+bone_clean$popup <- with(bone_clean, paste0(
+  '<div style="width:500px; max-height:400px; overflow:auto; font-size:9px; font-family:Arial,sans-serif;">',
+  '<table style="width:100%; border-collapse:collapse;">',
+  '<tr><th style="width:48%; padding:1px 4px; background:#e8f5e8; font-weight:600; border-right:1px solid #ddd;">Desa</th><td style="padding:1px 4px;">', Desa, '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">Kecamatan</th><td style="padding:1px 4px;">', Kecamatan, '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#d4edda; font-weight:700; border-right:1px solid #ddd;">Ranking</th><td style="padding:1px 4px; font-weight:700;">', Ranking, '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">1. Peringkat BUMDes</th><td style="padding:1px 4px;">', round(Peringkat_, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">2. Status Badan Hukum BUMDes</th><td style="padding:1px 4px;">', round(Status_Bad, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">3. Kemampuan BUMDes untuk menghasilkan hasil usaha</th><td style="padding:1px 4px;">', round(Kemampuan_, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">4. Kontribusi BUMDes untuk Pendapatan Asli Desa</th><td style="padding:1px 4px;">', round(Kontribusi, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">5. Ketepatan waktu dalam penyampaian APBDes</th><td style="padding:1px 4px;">', round(Ketepatan_, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">6. Rasio alokasi anggaran sub bidang kehutanan dan lingkungan hidup dalam APBDes terhadap total nilai APBDes</th><td style="padding:1px 4px;">', round(Rasio_alok, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">7. Status sub bidang kehutanan dan lingkungan hidup dalam APBDes</th><td style="padding:1px 4px;">', round(Status_sub, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;"> 8.Rasio alokasi anggaran sub bidang Kawasan pemukiman dalam APBDes terhadap total nilai APBDes</th><td style="padding:1px 4px;">', round(Rasio_al_1, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">9. Status sub bidang Kawasan pemukiman dalam APBDes</th><td style="padding:1px 4px;">', round(Status_s_1, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">10. Rasio alokasi anggaran sub bidang pertanian dan peternakan dalam APBDes terhadap total nilai APBDes</th><td style="padding:1px 4px;">', round(Rasio_al_2, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">11.Status sub bidang pertanian dan peternakan dalam APBDes</th><td style="padding:1px 4px;">', round(Status_s_2, 2), '</td></tr>',
+  '<tr><th style="width:48%; padding:1px 4px; background:#f0f8f0; font-weight:600; border-right:1px solid #ddd;">12. Status Desa Proklim</th><td style="padding:1px 4px;">', round(Status_Des, 2), '</td></tr>',
+  '</table></div>'
+))
+
+
+
+
+TAKE_Bone_2026 <- leaflet(bone_clean) %>%
+  addProviderTiles("Esri.WorldTopoMap") %>%
+  addScaleBar("bottomleft", options = scaleBarOptions(maxWidth = 100)) %>%
+  addMouseCoordinates() %>%
+  addPolygons(
+    fillColor  = ~pal(Ranking),
+    fillOpacity = 0.8,
+    color = "white",
+    weight = 0.5,
+    popup = ~popup,
+    label = ~paste(Desa, Ranking),
+    highlightOptions = highlightOptions(weight = 3, color = "black")
+  ) %>%
+  addLegend("bottomright", pal = pal, values = ~Ranking, 
+            title = "Ranking Desa<br/>(rendah = terbaik)",
+            labFormat = labelFormat(digits = 0))
+
+# SAVE AS HTML FILE (25MB standalone)
+htmlwidgets::saveWidget(TAKE_Bone_2026, "index.html", selfcontained = T)
+```
+
